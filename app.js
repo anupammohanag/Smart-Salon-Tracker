@@ -1664,21 +1664,21 @@ function renderMapSalonList(salons, useCalculated = false) {
 
   list.innerHTML = displaySalons.map(s => {
     const dist = useCalculated ? s.calculatedDistance : s.distance;
-    return \`
-      <div class="map-distance-card" onclick="panToSalon('\${s.id}')">
-        <div class="distance-emoji">\${s.emoji}</div>
+    return `
+      <div class="map-distance-card" onclick="panToSalon('${s.id}')">
+        <div class="distance-emoji">${s.emoji}</div>
         <div class="distance-info">
-          <div class="distance-name">\${s.name}</div>
-          <div class="distance-address">\${s.address}</div>
-          <div class="distance-rating">⭐ \${s.rating} (\${s.reviews})</div>
+          <div class="distance-name">${s.name}</div>
+          <div class="distance-address">${s.address}</div>
+          <div class="distance-rating">⭐ ${s.rating} (${s.reviews})</div>
         </div>
         <div class="distance-value">
-          <div class="distance-km">\${dist}</div>
+          <div class="distance-km">${dist}</div>
           <div class="distance-label">km away</div>
           <a href="#" class="directions-link" onclick="event.stopPropagation(); showToast('Opening directions...')">↗ Directions</a>
         </div>
       </div>
-    \`;
+    `;
   }).join('');
 }
 
