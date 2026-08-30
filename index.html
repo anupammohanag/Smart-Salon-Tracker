@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Smart Salon Tracker — Discover nearby salons, book appointments, manage customers, staff, and revenue analytics. Your all-in-one salon management dashboard.">
+  <title>Smart Salon Tracker — Discover, Book & Manage</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="app-layout">
+  <!-- ===== SIDEBAR NAVIGATION ===== -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">✂️</div>
+      <span class="logo-text">SalonTracker</span>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-item active" data-page="discover" id="nav-discover">
+        <span class="nav-icon">🔍</span>
+        <span class="nav-label">Discover</span>
+      </div>
+      <div class="nav-item" data-page="map" id="nav-map">
+        <span class="nav-icon">🗺️</span>
+        <span class="nav-label">Map</span>
+      </div>
+      <div class="nav-item" data-page="appointments" id="nav-appointments">
+        <span class="nav-icon">📅</span>
+        <span class="nav-label">Appointments</span>
+        <span class="nav-badge" id="appointment-badge" style="display:none;">0</span>
+      </div>
+      <div class="nav-item" data-page="customers" id="nav-customers">
+        <span class="nav-icon">👤</span>
+        <span class="nav-label">Customers</span>
+      </div>
+      <div class="nav-item" data-page="staff" id="nav-staff">
+        <span class="nav-icon">👥</span>
+        <span class="nav-label">Staff</span>
+      </div>
+      <div class="nav-item" data-page="analytics" id="nav-analytics">
+        <span class="nav-icon">📊</span>
+        <span class="nav-label">Analytics</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- ======== DISCOVER PAGE ======== -->
+    <section class="page-section active" id="page-discover">
+      <div class="hero-section">
+        <h2>Find Your Perfect <span class="text-gradient">Salon</span></h2>
+        <p>Discover top-rated salons near you and book your next appointment in seconds.</p>
+        <div class="search-container" style="max-width:520px;margin:0 auto;">
+          <span class="search-icon">🔍</span>
+          <input type="text" class="search-input" id="salon-search" placeholder="Search salons by name, service, or location...">
+        </div>
+      </div>
+
+      <div class="filters-bar" id="filters-bar">
+        <div class="filter-chip active" data-filter="all">All</div>
+        <div class="filter-chip" data-filter="haircut">Haircut</div>
+        <div class="filter-chip" data-filter="beard">Beard</div>
+        <div class="filter-chip" data-filter="spa">Spa</div>
+        <div class="filter-chip" data-filter="coloring">Coloring</div>
+        <div class="filter-chip" data-filter="facial">Facial</div>
+        <select class="filter-select" id="sort-select">
+          <option value="rating">Sort by Rating</option>
+          <option value="distance">Sort by Distance</option>
+          <option value="price-low">Price: Low to High</option>
+          <option value="price-high">Price: High to Low</option>
+        </select>
+      </div>
+
+      <div class="cards-grid" id="salons-grid">
+        <!-- Salon cards rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ======== MAP PAGE ======== -->
+    <section class="page-section" id="page-map">
+      <div class="page-header">
+        <h1>Salon <span class="accent">Map</span></h1>
+        <div style="display:flex;gap:var(--space-sm);align-items:center;">
+          <button class="btn btn-primary" id="btn-locate-me" onclick="locateMe()">
+            📍 Locate Me
+          </button>
+          <button class="btn btn-secondary" id="btn-show-all-salons" onclick="showAllSalonsOnMap()">
+            🔄 Show All
+          </button>
+        </div>
+      </div>
+
+      <div class="map-status-bar" id="map-status-bar">
+        <div class="map-status-item" id="map-user-location">
+          <span class="map-status-icon">📍</span>
+          <span class="map-status-text">Click "Locate Me" to find nearby salons</span>
+        </div>
+        <div class="map-status-item" id="map-nearest-salon">
+          <span class="map-status-icon">✂️</span>
+          <span class="map-status-text">—</span>
+        </div>
+      </div>
+
+      <div class="map-wrapper">
+        <div id="salon-map" class="salon-map"></div>
+      </div>
+
+      <div class="map-salon-list" id="map-salon-list">
+        <!-- Rendered by JS: sorted-by-distance salon cards -->
+      </div>
+    </section>
+
+    <!-- ======== APPOINTMENTS PAGE ======== -->
+    <section class="page-section" id="page-appointments">
+      <div class="page-header">
+        <h1>Your <span class="accent">Appointments</span></h1>
+        <button class="btn btn-primary" id="btn-new-appointment" onclick="openBookingModal()">
+          ➕ New Appointment
+        </button>
+      </div>
+
+      <div class="section-tabs" id="appointment-tabs">
+        <button class="section-tab active" data-tab="upcoming">Upcoming</button>
+        <button class="section-tab" data-tab="completed">Completed</button>
+        <button class="section-tab" data-tab="cancelled">Cancelled</button>
+      </div>
+
+      <div class="appointments-list" id="appointments-list">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ======== CUSTOMERS PAGE ======== -->
+    <section class="page-section" id="page-customers">
+      <div class="page-header">
+        <h1>Customer <span class="accent">Management</span></h1>
+        <button class="btn btn-primary" id="btn-add-customer" onclick="openCustomerModal()">
+          ➕ Add Customer
+        </button>
+      </div>
+
+      <div class="search-container mb-lg">
+        <span class="search-icon">🔍</span>
+        <input type="text" class="search-input" id="customer-search" placeholder="Search customers by name or phone...">
+      </div>
+
+      <div class="customer-table-wrapper">
+        <table class="customer-table" id="customer-table">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Phone</th>
+              <th>Email</th>
+              <th>Visits</th>
+              <th>Last Visit</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="customer-tbody">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ======== STAFF PAGE ======== -->
+    <section class="page-section" id="page-staff">
+      <div class="page-header">
+        <h1>Staff <span class="accent">Management</span></h1>
+        <button class="btn btn-primary" id="btn-add-staff" onclick="openStaffModal()">
+          ➕ Add Staff
+        </button>
+      </div>
+
+      <div class="staff-grid" id="staff-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ======== ANALYTICS PAGE ======== -->
+    <section class="page-section" id="page-analytics">
+      <div class="page-header">
+        <h1>Revenue & <span class="accent">Analytics</span></h1>
+      </div>
+
+      <div class="stats-grid" id="analytics-stats">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="charts-row">
+        <div class="chart-container">
+          <h3>Revenue Trend (Last 7 Days)</h3>
+          <canvas class="chart-canvas" id="revenue-chart"></canvas>
+        </div>
+        <div class="chart-container">
+          <h3>Services Breakdown</h3>
+          <canvas class="chart-canvas" id="services-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="charts-row mt-md">
+        <div class="chart-container">
+          <h3>🏆 Top Services</h3>
+          <ul class="top-list" id="top-services-list">
+            <!-- Rendered by JS -->
+          </ul>
+        </div>
+        <div class="chart-container">
+          <h3>⭐ Top Staff</h3>
+          <ul class="top-list" id="top-staff-list">
+            <!-- Rendered by JS -->
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== SALON DETAIL MODAL ===== -->
+<div class="modal-overlay salon-detail-modal" id="salon-detail-modal">
+  <div class="modal">
+    <div class="detail-hero-placeholder" id="detail-hero">💈</div>
+    <div class="detail-info">
+      <div class="flex-between mb-md">
+        <div>
+          <h2 id="detail-name"></h2>
+          <div class="detail-meta">
+            <span id="detail-rating"></span>
+            <span id="detail-address"></span>
+            <span id="detail-phone"></span>
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal('salon-detail-modal')">✕</button>
+      </div>
+
+      <p class="detail-description" id="detail-description"></p>
+
+      <div class="section-heading"><span class="heading-bar"></span> Operating Hours</div>
+      <p class="mb-lg" id="detail-hours" style="font-size:0.85rem;color:var(--text-secondary);"></p>
+
+      <div class="section-heading"><span class="heading-bar"></span> Services</div>
+      <table class="services-table" id="detail-services-table">
+        <thead><tr><th>Service</th><th>Duration</th><th>Price</th></tr></thead>
+        <tbody id="detail-services-tbody"></tbody>
+      </table>
+
+      <div class="section-heading"><span class="heading-bar"></span> Our Staff</div>
+      <div class="staff-list" id="detail-staff-list"></div>
+
+      <div class="section-heading"><span class="heading-bar"></span> Reviews</div>
+      <div class="review-list" id="detail-reviews-list"></div>
+
+      <div style="text-align:center;margin-top:var(--space-xl);">
+        <button class="btn btn-primary" id="detail-book-btn" onclick="bookFromDetail()">📅 Book Appointment</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== BOOKING MODAL ===== -->
+<div class="modal-overlay" id="booking-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📅 Book Appointment</h2>
+      <button class="modal-close" onclick="closeModal('booking-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Salon</label>
+        <select class="form-select" id="booking-salon"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Service</label>
+        <select class="form-select" id="booking-service"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Staff (Optional)</label>
+        <select class="form-select" id="booking-staff">
+          <option value="">Any Available</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="booking-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time</label>
+          <input type="time" class="form-input" id="booking-time">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Customer Name</label>
+        <input type="text" class="form-input" id="booking-customer" placeholder="Enter customer name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes (Optional)</label>
+        <textarea class="form-textarea" id="booking-notes" placeholder="Any special requests..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('booking-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAppointment()">Confirm Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CUSTOMER MODAL ===== -->
+<div class="modal-overlay" id="customer-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="customer-modal-title">➕ Add Customer</h2>
+      <button class="modal-close" onclick="closeModal('customer-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="customer-edit-id">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="customer-name" placeholder="Enter full name">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-input" id="customer-phone" placeholder="+1 (555) 000-0000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="customer-email" placeholder="email@example.com">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Preferences / Notes</label>
+        <textarea class="form-textarea" id="customer-prefs" placeholder="Hair type, preferred stylist, allergies, etc."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('customer-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCustomer()">Save Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== STAFF MODAL ===== -->
+<div class="modal-overlay" id="staff-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="staff-modal-title">➕ Add Staff</h2>
+      <button class="modal-close" onclick="closeModal('staff-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="staff-edit-id">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input type="text" class="form-input" id="staff-name-input" placeholder="Enter full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select class="form-select" id="staff-role-input">
+          <option value="Senior Stylist">Senior Stylist</option>
+          <option value="Stylist">Stylist</option>
+          <option value="Junior Stylist">Junior Stylist</option>
+          <option value="Barber">Barber</option>
+          <option value="Colorist">Colorist</option>
+          <option value="Spa Therapist">Spa Therapist</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Specialties (comma-separated)</label>
+        <input type="text" class="form-input" id="staff-specialties-input" placeholder="e.g. Fades, Coloring, Beard Trim">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('staff-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStaff()">Save Staff</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
